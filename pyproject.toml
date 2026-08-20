@@ -1,0 +1,29 @@
+[project]
+name = "agent-memory-exporter"
+version = "0.1.0"
+description = "Export agent conversation memory from WorkBuddy/OpenCode to knowledge bases"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv.workspace]
+members = [
+    "packages/shared",
+    "packages/cli",
+    "packages/mcp_server",
+]
+
+[tool.uv.sources]
+agent-memory-shared = { workspace = true }
+agent-memory-exporter-cli = { workspace = true }
+agent-memory-mcp-server = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [
+    "packages/shared/src",
+    "packages/cli/src",
+]

@@ -1,0 +1,6 @@
+"""Allow running with `python -m agent_memory_exporter`."""
+
+from agent_memory_exporter.cli import main
+
+if __name__ == "__main__":
+    main()

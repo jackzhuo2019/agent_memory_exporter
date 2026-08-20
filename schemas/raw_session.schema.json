@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-memory-exporter/schemas/raw_session.v1.json",
+  "title": "Raw Session",
+  "description": "Contract between CLI (producer) and MCP Server (consumer). One file per session.",
+  "type": "object",
+  "required": ["schema_version", "session_id", "source", "exported_at", "turns"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Schema version for forward compatibility."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Unique session identifier (WorkBuddy conversation-id or OpenCode session-id)."
+    },
+    "source": {
+      "type": "string",
+      "enum": ["workbuddy", "opencode"],
+      "description": "Which agent platform this session originated from."
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this raw JSON was exported."
+    },
+    "session_meta": {
+      "type": "object",
+      "description": "Session-level metadata from the source database.",
+      "properties": {
+        "title": { "type": "string" },
+        "cwd": { "type": "string", "description": "Working directory of the session." },
+        "model": { "type": "string" },
+        "mode": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "turn_count": { "type": "integer", "minimum": 0 },
+        "event_count": { "type": "integer", "minimum": 0 },
+        "token_total": { "type": "integer", "minimum": 0 },
+        "sub_agents": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of sub-agent jsonl filenames associated with this session."
+        }
+      }
+    },
+    "turns": {
+      "type": "array",
+      "description": "Conversation turns, ordered by turn_index. Turn boundary: each user message starts a new turn.",
+      "items": {
+        "type": "object",
+        "required": ["turn_index", "user_message", "user_timestamp", "events"],
+        "properties": {
+          "turn_index": {
+            "type": "integer",
+            "description": "0-based turn index. -1 for preamble (events before first user message)."
+          },
+          "user_message": {
+            "type": "string",
+            "description": "The user's input text. Empty string for preamble turns."
+          },
+          "user_timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp of the user message. Null for preamble."
+          },
+          "events": {
+            "type": "array",
+            "description": "All events in this turn (assistant, tool, reasoning, etc.), ordered by timestamp.",
+            "items": {
+              "type": "object",
+              "required": ["role", "timestamp"],
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["assistant", "tool", "reasoning", "file_snapshot", "sub_agent"],
+                  "description": "Event type."
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Text content (assistant message, reasoning text). May be empty for tool events."
+                },
+                "tool_name": {
+                  "type": "string",
+                  "description": "Tool name for role=tool (function_call)."
+                },
+                "tool_input": {
+                  "type": "string",
+                  "description": "Tool arguments (JSON string) for role=tool."
+                },
+                "tool_output": {
+                  "type": ["string", "null"],
+                  "description": "Tool result for role=tool. Null if function_call_result is missing."
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp of this event."
+                },
+                "error": {
+                  "type": ["string", "null"],
+                  "description": "Error message if the event failed."
+                },
+                "sub_agent_id": {
+                  "type": ["string", "null"],
+                  "description": "For role=sub_agent: the sub-agent session ID."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "description": "Data integrity issues detected during export.",
+      "items": {
+        "type": "object",
+        "required": ["gap_type", "details"],
+        "properties": {
+          "gap_type": {
+            "type": "string",
+            "enum": ["missing_jsonl", "missing_function_result", "timestamp_disorder", "empty_session", "parse_error"]
+          },
+          "details": { "type": "string" },
+          "event_id": { "type": ["string", "null"] },
+          "turn_index": { "type": ["integer", "null"] }
+        }
+      }
+    }
+  }
+}
