@@ -6,7 +6,7 @@
 - 仓库根目录: D:\agent_memory_exporter
 - 标准启动路径: `./init.sh`
 - 标准验证路径: `make check`
-- 当前最高优先级未完成功能: F03 (MCP Server export 工具)
+- 当前最高优先级未完成功能: F04 (MCP Server clean 工具)
 - 当前 blocker: 无
 
 ## 会话记录
@@ -105,3 +105,40 @@
   - OpenCode DB 913MB，list_sessions 全量扫描可能慢 (当前未分页，未来可加 LIMIT/OFFSET)
   - F03-F06 均未实现
 - 下一步最佳动作: 实现 F03 (MCP Server export 工具)
+
+### Session 004
+
+- 日期: 2026-08-21
+- 本轮目标: 实现 F03 (MCP Server export 工具)
+- 已完成:
+  - 实现 MCP Server 基础架构: server.py (stdio_server + tools/list + tools/call handlers), __main__.py, __init__.py
+  - 实现 ExportTool: in-process import CLI adapter/assembler/exporter/redactor/state, 支持 source/output/incremental/full/limit/no_redact/home_dir 参数
+  - MCP 2.0 API: Tool definition (input_schema), Server.add_request_handler, ListToolsResult/CallToolResult
+  - config/mcp_config.yaml 模板 (export/llm/weknora 配置占位)
+  - 7 个 MCP 测试: tool_definition, export_workbuddy, incremental_skip, full_reexports, no_redact, source_not_found, unknown_source
+  - 端到端验证: ExportTool.run() 导出 3 个真实 WorkBuddy 会话, 0 errors; create_server() 注册 tools/list + tools/call handlers
+  - 全量测试 51 passed (44 CLI + 7 MCP)
+- 运行过的验证:
+  - `uv run pytest tests/ -v` → 51 passed
+  - MCP export 端到端: ExportTool.run(source='workbuddy', full=True, limit=3) → 3 exported, 0 errors
+  - MCP server 创建: create_server() → handlers: ['ping', 'server/discover', 'tools/list', 'tools/call']
+  - Tool definition: name='export', 6 input params (source/output/incremental/full/limit/no_redact)
+- 已记录证据: 待 commit
+- 提交记录: (待提交)
+- 更新过的文件或工件:
+  - packages/mcp_server/src/agent_memory_mcp/__init__.py (新增)
+  - packages/mcp_server/src/agent_memory_mcp/__main__.py (新增)
+  - packages/mcp_server/src/agent_memory_mcp/server.py (新增)
+  - packages/mcp_server/src/agent_memory_mcp/tools/__init__.py (新增)
+  - packages/mcp_server/src/agent_memory_mcp/tools/export_tool.py (新增)
+  - packages/mcp_server/pyproject.toml (添加 agent-memory-exporter-cli 依赖)
+  - config/mcp_config.yaml (新增)
+  - tests/test_mcp/__init__.py (新增)
+  - tests/test_mcp/test_export_tool.py (新增, 7 测试)
+  - feature_list.json (F03 → passing)
+  - claude-progress.md (Session 004)
+- 已知风险或未解决问题:
+  - MCP server 的 tools/call handler 未做 MCP stdio 协议端到端测试（仅测试了 ExportTool.run() 直接调用）
+  - config/mcp_config.yaml 是模板，实际 LLM/WeKnora 配置需要用户填写
+  - F04-F06 均未实现
+- 下一步最佳动作: 实现 F04 (MCP Server clean 工具)

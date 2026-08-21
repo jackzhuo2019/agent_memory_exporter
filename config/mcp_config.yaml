@@ -1,0 +1,23 @@
+# MCP Server configuration for agent-memory-mcp
+#
+# This file is a template. Copy to mcp_config.local.yaml and fill in real values.
+# DO NOT commit mcp_config.local.yaml (it's in .gitignore).
+
+export:
+  # Default output directory for raw/processed files
+  root_dir: "./agent_export"
+
+  # Default data source
+  default_source: "workbuddy"
+
+# LLM configuration (used by clean tool, F04)
+# llm:
+#   base_url: "https://api.openai.com/v1"
+#   model: "gpt-4o-mini"
+#   api_key_env: "LLM_API_KEY"
+
+# WeKnora configuration (used by ingest tool, F05)
+# weknora:
+#   base_url: "http://172.17.20.109:8088/api/v1"
+#   api_key_env: "WEKNORA_API_KEY"
+#   default_kb_id: ""

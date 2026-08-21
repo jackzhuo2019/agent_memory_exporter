@@ -22,8 +22,8 @@
       "id": "F03",
       "behavior": "MCP Server export 工具:通过 MCP 协议触发 CLI 导出,支持 source/since/full 参数",
       "verification": "MCP 客户端调用 export 工具,返回 {exported, skipped, errors}",
-      "state": "not_started",
-      "evidence": null,
+      "state": "passing",
+      "evidence": "51 tests passing; MCP export tool end-to-end: 3 WorkBuddy sessions exported via ExportTool.run(); server create_server() with tools/list + tools/call handlers; tool definition with source/incremental/full/limit/no_redact params",
       "priority": 3
     },
     {
