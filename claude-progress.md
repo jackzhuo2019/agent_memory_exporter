@@ -1,11 +1,5 @@
 # 进度日志
 
-<!--
-文件名沿用课程历史约定,仅为兼容已有示例。这个文件与具体 agent 无关,
-Codex、Claude Code、OpenHands 等都可以使用。请在仓库指令中要求 agent
-开工时读取、交接前更新;任何 agent 都不会自动维护这个文件。
-来源:Learn Harness Engineering 第 5、6 讲。
--->
 
 ## 当前已验证状态
 
@@ -50,3 +44,31 @@ Codex、Claude Code、OpenHands 等都可以使用。请在仓库指令中要求
   - redaction_report.json 目前只写 summary,不记录每条规则的命中数 (已记录在代码中但 CLI 输出未完整聚合)
   - 子 agent jsonl (agent-*.jsonl) 的事件作为 sub_agent role 附加到主会话,但 parentId 关联到具体 turn 的逻辑可能需要细化
 - 下一步最佳动作: 实现 F02 (OpenCode adapter) 或 F03 (MCP Server export 工具),取决于优先级
+
+### Session 002
+
+- 日期: 2026-08-21
+- 本轮目标: F06 Auto-Wiki 蒸馏设计确认 + 文档更新
+- 已完成:
+  - 确认 F06 蒸馏后 Source-KB 不修改（原始会话永久保留）
+  - 确认一次性任务在 F04 clean 阶段打 quality 标签，trash 不入库 Source-KB
+  - 确认蒸馏增量（distill_state.json 记忆已处理条目，避免重复计算）
+  - 确认 topic_id 生成方式（LLM 提取关键词 → slugify，不由 LLM 直接生成 ID）
+  - 确认 wiki 覆盖策略（比较后选优：LLM 比较新旧 wiki，选更完整/更准确的版本）
+  - 确认检索优先级（Auto-Wiki 优先 → 未命中 → Source-KB 兜底）
+  - 更新 docs/architecture.md（两层 KB、增量蒸馏流程、distill_state.json、wiki 条目结构、检索优先级）
+  - 更新 docs/implementation-plan.md（F04 quality 标签、F05 只入库 high/medium、F06 完整设计）
+  - 更新 feature_list.json（F04-F06 行为和验证细化）
+- 运行过的验证: 无（本轮为设计文档更新，无代码变更）
+- 已记录证据: 本轮为设计确认，无 commit
+- 更新过的文件或工件:
+  - docs/architecture.md
+  - docs/implementation-plan.md
+  - feature_list.json
+  - claude-progress.md
+- 已知风险或未解决问题:
+  - F02-F06 均未实现，仅有设计和骨架
+  - topic_id slug 稳定性依赖 LLM 关键词提取的一致性，实际效果需验证
+  - 比较后选优策略每次需 2x token（读旧+生成新+比较），大规模蒸馏时成本较高
+  - Auto-Wiki KB 需要在 WeKnora 中预先创建，distill_state.json 需要记录 wiki_kb_id
+- 下一步最佳动作: 实现 F02 (OpenCode adapter) 或 F03 (MCP Server export 工具)

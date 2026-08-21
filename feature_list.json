@@ -28,24 +28,24 @@
     },
     {
       "id": "F04",
-      "behavior": "MCP Server clean 工具:读取 raw/*.json,LLM 过滤清洗,输出 processed/*.md",
-      "verification": "MCP 客户端调用 clean 工具,检查 agent_export/processed/*.md 已生成",
+      "behavior": "MCP Server clean 工具:读取 raw/*.json,LLM 过滤清洗,输出 processed/*.md,每条打 quality 标签(high/medium/low/trash),trash 不入库",
+      "verification": "MCP 客户端调用 clean 工具,检查 agent_export/processed/*.md 已生成且含 quality 标签",
       "state": "not_started",
       "evidence": null,
       "priority": 4
     },
     {
       "id": "F05",
-      "behavior": "MCP Server ingest 工具:读取 processed/*.md,调用 WeKnora HTTP API 入库到 Source-KB",
-      "verification": "MCP 客户端调用 ingest 工具,返回 {ingested, failed, kb_id},WeKnora list_knowledge 确认入库",
+      "behavior": "MCP Server ingest 工具:读取 processed/*.md(仅 high/medium),调用 WeKnora HTTP API 入库到 Source-KB",
+      "verification": "MCP 客户端调用 ingest 工具,返回 {ingested, failed, kb_id},WeKnora list_knowledge 确认入库,trash 条目不入库",
       "state": "not_started",
       "evidence": null,
       "priority": 5
     },
     {
       "id": "F06",
-      "behavior": "Auto-Wiki 蒸馏:定时任务从 Source-KB 提取高频主题,蒸馏为 wiki 条目,带 provenance 溯源",
-      "verification": "wiki 条目数 > 0 且每个条目有 provenance 字段包含来源 session ID",
+      "behavior": "Auto-Wiki 蒸馏:cron 每周增量蒸馏 Source-KB 新条目,LLM 聚类+关键词 slug 生成稳定 topic_id,比较后选优覆盖已有 wiki,provenance 记录来源 session ID,写入独立 Auto-Wiki KB",
+      "verification": "wiki 条目数 > 0 且每个条目有 provenance 字段包含来源 session ID;重复运行蒸馏不产生重复 wiki 条目;distill_state.json 的 processed_knowledge_ids 只增不减",
       "state": "not_started",
       "evidence": null,
       "priority": 6
