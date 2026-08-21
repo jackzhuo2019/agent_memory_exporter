@@ -6,7 +6,7 @@
 - 仓库根目录: D:\agent_memory_exporter
 - 标准启动路径: `./init.sh`
 - 标准验证路径: `make check`
-- 当前最高优先级未完成功能: F05 (MCP Server ingest 工具)
+- 当前最高优先级未完成功能: F06 (Auto-Wiki 蒸馏)
 - 当前 blocker: 无
 
 ## 会话记录
@@ -181,3 +181,43 @@
   - clean_prompt.md 的 prompt 效果需要用真实 LLM 调优
   - F05 (ingest) 和 F06 (Auto-Wiki) 均未实现
 - 下一步最佳动作: 实现 F05 (MCP Server ingest 工具)
+
+### Session 006
+
+- 日期: 2026-08-21
+- 本轮目标: 实现 F05 (MCP Server ingest 工具)
+- 已完成:
+  - 实现 WeKnoraClient (weknora_client.py): async REST client (httpx), list_knowledge_bases/upload_file/list_knowledge/get_knowledge/delete_knowledge, from_config_file 加载 mcp_config.yaml, API key 从环境变量或构造器参数
+  - 实现 upload_state.py: UploadState/UploadRecord Pydantic models, upload_state.json 持久化, is_uploaded/can_retry (MAX_RETRIES=3)/record_success/record_failure/record_skip
+  - 实现 IngestTool (ingest_tool.py): 读取 processed/*.md → parse_front_matter (YAML front-matter) → 过滤 quality (仅 high/medium) → WeKnoraClient.upload_file → 记录 upload_state.json
+    - 参数: kb_id (或 config default_kb_id), output, limit, force (重上传), dry_run (预览), config_path
+    - 幂等性: 已 uploaded 的文件跳过 (force=True 重传)
+    - 重试: 失败记录 retries, 达到 MAX_RETRIES (3) 后跳过
+    - 容错: 上传异常不中断, 继续处理下一个文件
+  - 注册 ingest 工具到 server.py (tools/list 返回 export+clean+ingest, tools/call 路由 ingest)
+  - 53 个新测试:
+    - test_weknora_client.py (20): config defaults/custom, api_key from env/var/none, headers with/without key, from_config_file (not_found/weknora_section/no_section), list_knowledge_bases (success/error), upload_file (success/not_found/server_error), list_knowledge, get_knowledge, delete_knowledge (success/failure), close
+    - test_upload_state.py (10): save_load_empty, load_nonexistent, record_success, record_failure, failure_increments_retries, record_skip, is_uploaded, can_retry (no_record/under_max/at_max), save_load_with_records
+    - test_ingest_tool.py (18): parse_front_matter (5: basic/no_fm/empty/malformed/missing_closing), IngestTool (13: tool_definition, high, medium, low_filtered, trash_filtered, no_quality_filtered, skip_already_uploaded, force_reuploads, limit, dry_run, upload_failure, exception_continues, mixed_qualities, no_processed_dir, no_kb_id, uses_config_default_kb_id, max_retries_exceeded)
+  - E2E: export 2 真实 WorkBuddy 会话 → clean (mock LLM, high quality) → ingest (mock WeKnora) → 2 ingested, upload_state.json 2 records (status=uploaded, knowledge_id=k-e2e-001), 第二次 ingest → 2 skipped (幂等)
+  - 全量测试 126 passed (73 之前 + 53 新增)
+- 运行过的验证:
+  - `uv run pytest tests/ -v` → 126 passed
+  - E2E pipeline: ExportTool → CleanTool → IngestTool 全链路, upload_state.json 记录正确, 幂等性验证通过
+- 已记录证据: 待 commit
+- 提交记录: (待提交)
+- 更新过的文件或工件:
+  - packages/mcp_server/src/agent_memory_mcp/weknora_client.py (新增)
+  - packages/mcp_server/src/agent_memory_mcp/upload_state.py (新增)
+  - packages/mcp_server/src/agent_memory_mcp/tools/ingest_tool.py (新增)
+  - packages/mcp_server/src/agent_memory_mcp/server.py (注册 ingest 工具)
+  - tests/test_mcp/test_weknora_client.py (新增, 20 测试)
+  - tests/test_mcp/test_upload_state.py (新增, 10 测试)
+  - tests/test_mcp/test_ingest_tool.py (新增, 23 测试)
+  - feature_list.json (F05 → passing)
+  - claude-progress.md (Session 006)
+- 已知风险或未解决问题:
+  - WeKnora API 调用未做真实 HTTP 端到端测试 (仅 mock client), 需要配置 WEKNORA_API_KEY 和 kb_id 后验证
+  - upload_file 的 multipart 格式 (file field + enable_multimodel) 需要和真实 WeKnora API 验证
+  - F06 (Auto-Wiki 蒸馏) 未实现
+- 下一步最佳动作: 实现 F06 (Auto-Wiki 蒸馏)

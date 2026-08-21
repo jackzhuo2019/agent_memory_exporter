@@ -38,8 +38,8 @@
       "id": "F05",
       "behavior": "MCP Server ingest 工具:读取 processed/*.md(仅 high/medium),调用 WeKnora HTTP API 入库到 Source-KB",
       "verification": "MCP 客户端调用 ingest 工具,返回 {ingested, failed, kb_id},WeKnora list_knowledge 确认入库,trash 条目不入库",
-      "state": "not_started",
-      "evidence": null,
+      "state": "passing",
+      "evidence": "126 tests passing; weknora_client.py (list_knowledge_bases, upload_file, list_knowledge, get_knowledge, delete_knowledge), upload_state.py (upload_state.json with per-file tracking, retry max 3, is_uploaded/can_retry/record_success/record_failure/record_skip), ingest_tool.py (parse_front_matter, quality filter high/medium only, dry_run, force, limit, idempotent skip, max_retries), server.py registers export+clean+ingest; 53 new tests (weknora_client 20, upload_state 10, ingest_tool 18, parse_front_matter 5); E2E: export 2 sessions → clean (mock LLM, high quality) → ingest (mock WeKnora) → 2 ingested, upload_state.json records correct, second run skips both",
       "priority": 5
     },
     {
