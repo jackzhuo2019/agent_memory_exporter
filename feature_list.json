@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "description": "功能清单原子。调度器靠它选任务,验证器靠它判完成,交接器靠它生成报告。来源:Learn Harness Engineering 第 8 讲。",
+  "features": [
+    {
+      "id": "F01",
+      "behavior": "CLI export --source workbuddy 能从 WorkBuddy 本地数据导出会话到 raw/*.json,包含 turn 重组、PII 脱敏、增量导出",
+      "verification": "uv run agent-memory-exporter export --source workbuddy --limit 3 && ls agent_export/raw/*.json | head -1 && uv run agent-memory-exporter validate",
+      "state": "passing",
+      "evidence": "commit 1e0beb3: 36 tests passing, 3 real WorkBuddy sessions exported, schema validation passed",
+      "priority": 1
+    },
+    {
+      "id": "F02",
+      "behavior": "OpenCode adapter: --source opencode 能从 OpenCode 本地 DB 导出会话,与 WorkBuddy adapter 接口一致",
+      "verification": "uv run agent-memory-exporter export --source opencode --limit 3 && ls agent_export/raw/*.json | head -1",
+      "state": "not_started",
+      "evidence": null,
+      "priority": 2
+    },
+    {
+      "id": "F03",
+      "behavior": "MCP Server export 工具:通过 MCP 协议触发 CLI 导出,支持 source/since/full 参数",
+      "verification": "MCP 客户端调用 export 工具,返回 {exported, skipped, errors}",
+      "state": "not_started",
+      "evidence": null,
+      "priority": 3
+    },
+    {
+      "id": "F04",
+      "behavior": "MCP Server clean 工具:读取 raw/*.json,LLM 过滤清洗,输出 processed/*.md",
+      "verification": "MCP 客户端调用 clean 工具,检查 agent_export/processed/*.md 已生成",
+      "state": "not_started",
+      "evidence": null,
+      "priority": 4
+    },
+    {
+      "id": "F05",
+      "behavior": "MCP Server ingest 工具:读取 processed/*.md,调用 WeKnora HTTP API 入库到 Source-KB",
+      "verification": "MCP 客户端调用 ingest 工具,返回 {ingested, failed, kb_id},WeKnora list_knowledge 确认入库",
+      "state": "not_started",
+      "evidence": null,
+      "priority": 5
+    },
+    {
+      "id": "F06",
+      "behavior": "Auto-Wiki 蒸馏:定时任务从 Source-KB 提取高频主题,蒸馏为 wiki 条目,带 provenance 溯源",
+      "verification": "wiki 条目数 > 0 且每个条目有 provenance 字段包含来源 session ID",
+      "state": "not_started",
+      "evidence": null,
+      "priority": 6
+    }
+  ],
+  "state_legend": {
+    "not_started": "尚未开始",
+    "active": "正在做,但未通过验证",
+    "blocked": "被依赖问题阻塞",
+    "passing": "验证通过,已完成(唯一不可逆状态)"
+  },
+  "rules": {
+    "wip_limit": 1,
+    "state_transition": "not_started -> active -> passing(验证通过才可升级); active -> blocked(依赖问题); blocked -> active(阻塞解除); passing 不可回退",
+    "evidence_required": "state 为 passing 时,evidence 必须填写 commit hash 或测试输出日志",
+    "agent_cannot_self_mark_passing": "agent 不能直接把状态改成 passing,只能由验证命令执行结果决定"
+  }
+}
