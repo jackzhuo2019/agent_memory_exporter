@@ -14,8 +14,8 @@
       "id": "F02",
       "behavior": "OpenCode adapter: --source opencode 能从 OpenCode 本地 DB 导出会话,与 WorkBuddy adapter 接口一致",
       "verification": "uv run agent-memory-exporter export --source opencode --limit 3 && ls agent_export/raw/*.json | head -1",
-      "state": "not_started",
-      "evidence": null,
+      "state": "passing",
+      "evidence": "44 tests passing; uv run agent-memory-exporter export --source opencode --limit 3 → 3 exported, 0 errors; validate → 3 valid, 0 invalid; status → 3 sessions, 0 gaps",
       "priority": 2
     },
     {

@@ -6,7 +6,7 @@
 - 仓库根目录: D:\agent_memory_exporter
 - 标准启动路径: `./init.sh`
 - 标准验证路径: `make check`
-- 当前最高优先级未完成功能: F02 (OpenCode adapter)
+- 当前最高优先级未完成功能: F03 (MCP Server export 工具)
 - 当前 blocker: 无
 
 ## 会话记录
@@ -72,3 +72,36 @@
   - 比较后选优策略每次需 2x token（读旧+生成新+比较），大规模蒸馏时成本较高
   - Auto-Wiki KB 需要在 WeKnora 中预先创建，distill_state.json 需要记录 wiki_kb_id
 - 下一步最佳动作: 实现 F02 (OpenCode adapter) 或 F03 (MCP Server export 工具)
+
+### Session 003
+
+- 日期: 2026-08-21
+- 本轮目标: 实现 F02 (OpenCode adapter)
+- 已完成:
+  - 调研 OpenCode DB 结构: session/message/part 三表，message.data 含 role, part.data 含 type(text/tool/step-start/step-finish)
+  - 实现 OpenCodeAdapter: list_sessions (过滤 time_archived), read_session (message+part → 事件流 → assembler)
+  - OpenCode 事件映射: user message → turn 边界, assistant text part → assistant event, tool part → tool event (input+output), step-start/step-finish 忽略
+  - session_input 表作为 user 消息文本的 fallback (parts 无 text 时)
+  - archived session 过滤 (time_archived IS NOT NULL)
+  - 8 个单元测试 (test_opencode.py): detect/list/since filter/read/not_found/archived/name
+  - 端到端验证: --source opencode --limit 3 → 3 exported, 0 errors; validate → 3 valid; 增量导出正确 (第二次跳过已导出)
+  - 1 个 gap 检测到 (missing_function_result, OpenCode tool part 无 output) — 预期行为
+  - 全量测试 44 passed (之前 36 + 新增 8)
+- 运行过的验证:
+  - `uv run pytest tests/ -v` → 44 passed
+  - `uv run agent-memory-exporter export --source opencode --limit 3` → 3 exported, 0 errors
+  - `uv run agent-memory-exporter validate` → 3 valid, 0 invalid
+  - `uv run agent-memory-exporter status` → 3 sessions, 0 gaps
+  - 增量导出: 第二次运行 → 3 新 exported (前 3 个跳过)
+- 已记录证据: 待 commit
+- 提交记录: (待提交)
+- 更新过的文件或工件:
+  - packages/cli/src/agent_memory_exporter/adapters/opencode.py (完整实现，替换 stub)
+  - tests/test_adapters/test_opencode.py (新增 8 个测试)
+  - feature_list.json (F02 → passing)
+  - claude-progress.md (Session 003)
+- 已知风险或未解决问题:
+  - OpenCode tool part 的 state.output 可能为空 (gap 检测正确报告 missing_function_result)
+  - OpenCode DB 913MB，list_sessions 全量扫描可能慢 (当前未分页，未来可加 LIMIT/OFFSET)
+  - F03-F06 均未实现
+- 下一步最佳动作: 实现 F03 (MCP Server export 工具)
