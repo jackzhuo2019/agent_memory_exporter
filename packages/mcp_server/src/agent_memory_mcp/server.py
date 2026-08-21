@@ -32,6 +32,7 @@ from mcp.types import (
 )
 
 from agent_memory_mcp.tools.export_tool import ExportTool
+from agent_memory_mcp.tools.clean_tool import CleanTool
 
 
 def create_server() -> Server:
@@ -39,9 +40,15 @@ def create_server() -> Server:
     server = Server("agent-memory-mcp")
 
     export_tool = ExportTool()
+    clean_tool = CleanTool()
 
     async def handle_list_tools(request: ListToolsRequest) -> ListToolsResult:
-        return ListToolsResult(tools=[export_tool.get_tool_definition()])
+        return ListToolsResult(
+            tools=[
+                export_tool.get_tool_definition(),
+                clean_tool.get_tool_definition(),
+            ]
+        )
 
     async def handle_call_tool(request: CallToolRequest) -> CallToolResult:
         name = request.params.name if request.params else ""
@@ -51,6 +58,9 @@ def create_server() -> Server:
 
         if name == "export":
             result = await export_tool.run(**arguments)
+            return CallToolResult(content=[TextContent(type="text", text=result.to_json())])
+        elif name == "clean":
+            result = await clean_tool.run(**arguments)
             return CallToolResult(content=[TextContent(type="text", text=result.to_json())])
         else:
             return CallToolResult(

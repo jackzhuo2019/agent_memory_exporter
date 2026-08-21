@@ -30,8 +30,8 @@
       "id": "F04",
       "behavior": "MCP Server clean 工具:读取 raw/*.json,LLM 过滤清洗,输出 processed/*.md,每条打 quality 标签(high/medium/low/trash),trash 不入库",
       "verification": "MCP 客户端调用 clean 工具,检查 agent_export/processed/*.md 已生成且含 quality 标签",
-      "state": "not_started",
-      "evidence": null,
+      "state": "passing",
+      "evidence": "73 tests passing; clean_tool.py with LLMClient (OpenAI-compatible, httpx), clean_prompt.md system prompt, parse_llm_response (JSON with fence/extra-text fallback), build_processed_markdown (YAML front-matter with quality/source/session_id/cleaned_at/title); 22 new tests covering parse_llm_response (8), session_to_user_prompt (2), build_processed_markdown (2), CleanTool.run (10: high/trash/skip/force/limit/no_raw_dir/multi_quality/llm_error/model_recorded); E2E: export 2 real WorkBuddy sessions → clean with mock LLM → 2 processed/*.md with quality:medium front-matter; server.py registers both export + clean tools",
       "priority": 4
     },
     {

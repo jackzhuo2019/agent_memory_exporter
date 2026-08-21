@@ -6,7 +6,7 @@
 - 仓库根目录: D:\agent_memory_exporter
 - 标准启动路径: `./init.sh`
 - 标准验证路径: `make check`
-- 当前最高优先级未完成功能: F04 (MCP Server clean 工具)
+- 当前最高优先级未完成功能: F05 (MCP Server ingest 工具)
 - 当前 blocker: 无
 
 ## 会话记录
@@ -142,3 +142,42 @@
   - config/mcp_config.yaml 是模板，实际 LLM/WeKnora 配置需要用户填写
   - F04-F06 均未实现
 - 下一步最佳动作: 实现 F04 (MCP Server clean 工具)
+
+### Session 005
+
+- 日期: 2026-08-21
+- 本轮目标: 实现 F04 (MCP Server clean 工具)
+- 已完成:
+  - 实现 LLMClient (llm_client.py): OpenAI-compatible async client (httpx), from_config_file 加载 mcp_config.yaml, chat() 方法, API key 从环境变量或构造器参数
+  - 实现 clean_prompt.md: 系统提示模板 (过滤噪声/提取知识/结构化 markdown/quality 标签 high/medium/low/trash, 输出 JSON {quality, title, markdown})
+  - 实现 CleanTool (clean_tool.py): 读取 raw/*.json → session_to_user_prompt (截断长 tool_output) → LLM chat → parse_llm_response (JSON 解析含 markdown fence/extra text fallback) → build_processed_markdown (YAML front-matter: quality/source/session_id/cleaned_at/title) → 写入 processed/*.md
+  - CleanTool 参数: output/limit/force/config_path; trash 质量不写文件; 已有 processed/*.md 默认跳过 (force 重清洗); LLM 错误不中断 (继续处理下一个)
+  - 注册 clean 工具到 server.py (tools/list 返回 export + clean, tools/call 路由 clean)
+  - 22 个新测试 (test_clean_tool.py):
+    - TestParseLLMResponse (8): valid_json, markdown_fences, extra_text_around_json, invalid_quality, missing_quality, empty_markdown, completely_invalid, trash_quality
+    - TestSessionToUserPrompt (2): basic_conversion, truncates_long_tool_output
+    - TestBuildProcessedMarkdown (2): front_matter, ends_with_newline
+    - TestCleanTool (10): tool_definition, clean_high_quality, clean_trash_skipped, clean_skip_existing, clean_force_overwrites, clean_limit, clean_no_raw_dir, clean_multiple_qualities, clean_llm_error_continues, clean_llm_model_recorded
+  - 端到端验证: export 2 真实 WorkBuddy 会话 → mock LLM clean → 2 processed/*.md (quality:medium front-matter)
+  - 全量测试 73 passed (51 之前 + 22 新增)
+- 运行过的验证:
+  - `uv run pytest tests/ -v` → 73 passed
+  - E2E: ExportTool.run(source='workbuddy', full=True, limit=2) → 2 exported, 0 errors
+  - E2E: CleanTool.run(output=tmp) with mock LLM → 2 cleaned, 0 errors, quality_counts={'high':0,'medium':2,'low':0,'trash':0}
+  - E2E: processed/*.md 文件含 YAML front-matter (quality/source/session_id/cleaned_at/title) + markdown body
+- 已记录证据: 待 commit
+- 提交记录: (待提交)
+- 更新过的文件或工件:
+  - packages/mcp_server/src/agent_memory_mcp/llm_client.py (新增)
+  - packages/mcp_server/src/agent_memory_mcp/prompts/__init__.py (新增)
+  - packages/mcp_server/src/agent_memory_mcp/prompts/clean_prompt.md (新增)
+  - packages/mcp_server/src/agent_memory_mcp/tools/clean_tool.py (新增)
+  - packages/mcp_server/src/agent_memory_mcp/server.py (注册 clean 工具)
+  - tests/test_mcp/test_clean_tool.py (新增, 22 测试)
+  - feature_list.json (F04 → passing)
+  - claude-progress.md (Session 005)
+- 已知风险或未解决问题:
+  - LLM 调用未做真实 API 端到端测试 (仅 mock LLM), 需要配置 LLM_API_KEY 后验证
+  - clean_prompt.md 的 prompt 效果需要用真实 LLM 调优
+  - F05 (ingest) 和 F06 (Auto-Wiki) 均未实现
+- 下一步最佳动作: 实现 F05 (MCP Server ingest 工具)
